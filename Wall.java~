@@ -1,0 +1,27 @@
+import java.awt.image.*;
+import javax.imageio.*;
+import java.io.File;
+public class Wall extends MapObject {
+
+  private int health;
+  public Wall(int x, int y, int health) { 
+   super.setX(x);
+    super.setY(y);
+   this.health=health;
+   try{
+
+        image = ImageIO.read(new File("wall.png"));
+      super.setImage(image);
+    }catch(Exception e){}
+  }
+
+  public int getHealth(){
+  return health;
+  }
+  public void setHealth(int health){
+   // System.out.println("Change Health: from "+this.health+" to "+health );
+  this.health=health;
+  }
+  /* ADD YOUR CODE HERE */
+  
+}

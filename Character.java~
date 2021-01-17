@@ -1,0 +1,203 @@
+import java.util.*;
+import java.awt.image.*;
+public abstract class Character {
+  private int health;
+  private int defence;
+  private int attack;
+  BufferedImage image1;
+  BufferedImage image2;
+  private int move;
+  private int currentSpeed;
+  private int maxRange;
+  private int minRange;
+  private  int speed;
+  private  int yPosition;
+  private  int team;
+  private   int xPosition;
+  private   String name;
+  private int maxHealth;
+  public Character[][] attack(Character[][]map, int x, int y,double enemyDefenceTimes){
+    if(Math.random()*100>=90){
+      GameFrame.q.add(this.getClass()+" deal "+(int)(attack*1.5*(1-(map[x][y].getDefence()*enemyDefenceTimes/100)))+" damage to "+map[x][y].getClass());
+      
+      if( GameFrame.q.size()>10){
+        GameFrame.q.poll();
+      }
+      map[x][y].setHealth(map[x][y].getHealth()-(int)(attack*1.5*(1-map[x][y].getDefence()*enemyDefenceTimes/100)));
+    }else{
+      GameFrame.q.add(this.getClass()+" deal "+(int)(attack*(1-(map[x][y].getDefence()*enemyDefenceTimes/100)))+" damage to "+map[x][y].getClass());
+      
+      if( GameFrame.q.size()>10){
+        GameFrame.q.poll();
+      }
+      map[x][y].setHealth(map[x][y].getHealth()-(int)(attack*(1-map[x][y].getDefence()*enemyDefenceTimes/100)));
+    }
+    return map;
+  }
+  public void setImage(BufferedImage image1, BufferedImage image2){
+    this.image1=image1;
+    this.image2=image2;
+  }
+  public BufferedImage getImage(){
+  return image1;
+  }
+  public BufferedImage getImageDis(){
+  return image2;
+  }
+  
+  public Character[][] changePosition(Character[][] map,int moveToX,int moveToY){
+     map[xPosition][yPosition]=new TempCharacter();
+    map[moveToX][moveToY]=this;
+    xPosition=moveToX;
+      yPosition=moveToY;
+    return map;
+  }
+  
+
+  public class Point{
+    int x;
+    int y;
+    Point(int x, int y){
+      this.x=x;
+      this.y=y;
+    }
+    public int getX(){
+      return x;
+    }
+    public int getY(){
+      return y;
+    }
+  }
+  public Boolean callCheckMoveRange(int moveToX, int moveToY,  MapObject[][]map, Character[][] map2){
+    Boolean b=checkMoveRange(new Point(xPosition, yPosition),new Point(moveToX, moveToY),map, 0, map2 );
+   // System.out.println(b);
+  return b;
+  }
+  
+  
+  public Boolean checkMoveRange(Point currentPoint, Point aim,  MapObject[][]map, int round, Character[][] map2){
+    int x=currentPoint.getX();
+     int y=currentPoint.getY();
+    if(round>move){
+     
+    return false;
+    }
+    
+    
+     if(x<0||x>=FinnalGame.mapx||y<0||y>=FinnalGame.mapy||(map[x][y] instanceof Wall)){
+       return false;
+     }
+     if(!(map2[x][y] instanceof TempCharacter)){
+       if(map2[x][y].getTeam() !=team){
+         
+       return false;
+       }
+     }
+     if(x==aim.getX()&&y==aim.getY()){
+      return true;
+    
+    }
+     int addRound=checkMoveCost(map[x][y]);
+
+     if(checkMoveRange(new Point(x+1, y), aim, map, round+addRound, map2)||checkMoveRange(new Point(x-1, y), aim, map, round+addRound, map2)||checkMoveRange(new Point(x, y+1), aim, map, round+addRound, map2)||checkMoveRange(new Point(x, y-1), aim, map, round+addRound, map2)){
+       return true;
+     }
+     return false;
+  }
+  
+  
+  public int checkMoveCost(MapObject ob){
+  int  moveCast;
+    if(ob instanceof Forest||ob instanceof Desert){
+  moveCast= 2;
+    }else{
+    moveCast= 1;
+    }
+
+    return moveCast;
+  
+  }
+  
+  
+  public void setName(String name){
+    this.name=name;
+  }
+  public void upDateSpeed(){
+    currentSpeed=speed;
+  }
+  public void setTeam(int team){
+    this.team=team;
+  }
+  public int getAttack(){
+    return attack;
+  }
+  public int getTeam(){
+    return team;
+  }
+  public int getDefence(){
+    return defence;
+  }
+  public int getHealth(){
+    return health;
+  }
+  public int getMove(){
+    return move;
+  }
+  public int getCurrentSpeed(){
+    return currentSpeed;
+  }
+  public void setAttack(int attack){
+    this.attack=attack;
+  }
+  public int getSpeed(){
+    return speed;
+  }
+  public void setSpeed(int speed){
+    this.speed=speed;
+  }
+  public void setDefence(int defence){
+    this.defence=defence;
+  }
+  public void setHealth(int health){
+    this.health=health;
+  }
+  public void setMove(int move){
+    this.move=move;
+  }
+  public int getMaxRange(){
+    return maxRange;
+  }
+  public int getXPosition(){
+    return xPosition;
+  }
+  public String getName(){
+  return name;
+  }
+  public int getYPosition(){
+    return yPosition;
+  }
+   public int getMaxHealth(){
+    return maxHealth;
+  }
+    public void setMaxHealth(int maxHealth){
+    this. maxHealth=maxHealth;
+  }
+  public void setCurrentSpeed(int currentSpeed){
+    this.currentSpeed=currentSpeed;
+  }
+  public void setXPosition(int x){
+    xPosition=x;
+  }
+  public void setYPosition(int y){
+    yPosition=y;
+  }
+  public void setMaxRange(int maxRange){
+    this.maxRange=maxRange;
+  }  
+  public int getMinRange(){
+    return minRange;
+  }
+  public void setMinRange(int minRange){
+    this.minRange=minRange;
+  }
+}

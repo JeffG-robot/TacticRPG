@@ -1,0 +1,54 @@
+import java.awt.image.*;
+import javax.imageio.*;
+import java.io.File;
+public class Caster extends Character {
+  
+  public Caster(String name, int health, int attack, int defence, int speed, int team) { 
+    super.setName(name);
+    super.setTeam(team);
+   super.setMaxRange(3);//can shoot range of 2 and 3
+    super.setMinRange(1);
+    super.setSpeed(speed);
+    super.setAttack(attack);
+    super.setHealth(health);
+    super.setMaxHealth(health);
+    super.setDefence(defence);
+    super.setMove(2);
+     BufferedImage image;
+    try{
+      if(team==1){
+        image = ImageIO.read(new File("RedTeam(1).png"));
+      }else{
+        image = ImageIO.read(new File("BlueTeam(1).png"));
+      }
+      super.setImage(image.getSubimage(276, 0, 46, 46), image.getSubimage(276, 46, 46, 46));
+    }catch(Exception e){}
+    super.upDateSpeed();
+  }
+  public Character[][] attack(Character[][]map, int x, int y,double enemyDefenceTimes){
+    if(map[x][y].getMaxHealth()-map[x][y].getHealth()<=super.getAttack()){
+      
+      
+      GameFrame.q.add(this.getClass()+" Heal "+(map[x][y].getMaxHealth()-map[x][y].getHealth())+" Health to "+map[x][y].getClass());
+      if( GameFrame.q.size()>10){
+        GameFrame.q.poll();
+      }
+      map[x][y].setHealth(map[x][y].getMaxHealth());
+      return map;
+      
+      
+    }else{
+      
+      
+      GameFrame.q.add(this.getClass()+" Heal "+super.getAttack()+" Health to "+map[x][y].getClass());
+      if( GameFrame.q.size()>10){
+        GameFrame.q.poll();
+      }
+      map[x][y].setHealth(map[x][y].getHealth()+super.getAttack());
+      return map;
+      
+      
+    }
+  }
+  
+}

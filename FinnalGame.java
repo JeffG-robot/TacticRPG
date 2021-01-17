@@ -1,0 +1,646 @@
+/**
+ * FinnalGame.java
+ * a class to start the game, and to display the menu
+ * By Vincent Zhang and Jeffrey
+ * 2018/1/18
+ * Teacher: Mr.Mangat
+ * */
+import javax.swing.JFrame;
+import java.net.Socket;
+import java.net.ServerSocket;
+import java.io.PrintWriter;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.imageio.ImageIO;
+import java.io.File;
+import java.io.IOException;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.image.BufferedImage;
+import java.awt.Graphics;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseEvent;
+import java.awt.Point;
+public class FinnalGame extends JFrame{
+  MapObject[][] map;
+  Character[] p1;
+  static int helpMenu;
+  static int playerNumber;
+  Character[] p2;
+  static ServerSocket serverSock;
+  static Socket player2;
+  private GameFrame myAnimation;
+  static Boolean mousePressed=false;
+  static PrintWriter output;  //printwriter for network output
+  static BufferedReader input; //Stream for network input
+  static Point p;
+  static Point displayPoint=new Point(0, 0);
+  static  int mapx;
+  static int mapy;
+  static Boolean mousePressed2=false;
+  static int team;
+  static int currentMouseX;
+  static int currentMouseY;
+  static  int winx;
+  static int winy;
+  static Boolean mousePressedMenu;
+  public static void main(String[] args){
+    new FinnalGame();
+  }
+  
+  
+  
+  //constructor
+  FinnalGame() {
+    super("Finnal Project");
+    mousePressedMenu=false;
+    //add a new jframe to it, and add a drawpanel to the frame
+    JFrame frame=new JFrame();
+    frame.setBounds(100, 100, 1672, 878);
+    frame.setResizable(false);
+    frame.addMouseListener(new MyMouseListener2());
+    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    winx=700;
+    winy=700;
+    
+    frame.add(new drawPanel());
+    frame.setVisible(true);
+    
+    
+    //wait for the mouse listener to get if the user is joinging a game or hosting a game
+    playerNumber=0;
+    
+    //waiting
+    while(playerNumber==0){
+      try{
+        Thread.sleep(1);
+      }catch(Exception e){}
+    }
+    frame.setVisible(false);
+    frame=new JFrame();
+    if(playerNumber==1){
+      
+      //if hosting the game, then enter the map size, and the amount of characters
+      try{
+        int mapSize;
+        int characterNumber;
+        
+        do{
+          mapSize=Integer.valueOf( JOptionPane.showInputDialog("enter the size of the map(bigger then 3) "));
+        }while(mapSize<=3);
+        
+        do{
+          characterNumber=Integer.valueOf( JOptionPane.showInputDialog("enter the amount of character you player have(bigger then 0, smaller then the size of map)"));
+        }while(characterNumber<=0||characterNumber>=mapSize);
+        
+        //create a character array
+        p1=new Character[characterNumber];
+        p2=new Character[characterNumber];
+        
+        //change the map size and create a map
+        mapx=mapSize;
+        mapy=mapSize;
+        map=new MapObject[mapx][mapy];
+        serverSock = new ServerSocket(4);  //assigns an port to the server
+        frame.setVisible(false);
+        
+        //wait for connection make and get the input/output stream
+        player2=serverSock.accept();
+        InputStreamReader stream = new InputStreamReader(player2.getInputStream());
+        input= new BufferedReader(stream);//Stream for network input
+        output=new PrintWriter(player2.getOutputStream());
+        
+        //send the mapsize and character number to another player
+        outPutCommands(mapSize);
+        outPutCommands(characterNumber);
+        team=1;
+        
+        //random map
+        map=randomMap(mapx, mapy);
+        
+        
+        //random character
+        for(int i=0;i<characterNumber;i++){
+          p1[i]=randomCharacter(1);
+          
+        }
+        for(int i=0;i<characterNumber;i++){
+          p2[i]=randomCharacter(2);
+        }
+      }catch(Exception e){}
+      
+    }else if (playerNumber==2){
+      
+      //if the user is joining the game, then need to enter the port and address
+      team=2;
+      int port=Integer.valueOf( JOptionPane.showInputDialog("enter the port of the game "));
+      String address= JOptionPane.showInputDialog("enter the address of the game ");
+      
+      //get the input and out put stream, and also mapsize and characternumber of the game
+      int characterNumber=0;
+      try{
+        player2= new Socket("127.0.0.1",4); //attempt socket connection (local address). This will wait until a connection is made
+        InputStreamReader stream = new InputStreamReader(player2.getInputStream());
+        input= new BufferedReader(stream);//Stream for network input
+        this.setLocation(900, 0);
+        output=new PrintWriter(player2.getOutputStream());
+        
+        int mapSize=Integer.valueOf(input.readLine());
+        characterNumber=Integer.valueOf(input.readLine());
+        
+        
+        mapx=mapSize;
+        mapy=mapSize;
+        
+        //create map array
+        map=new MapObject[mapx][mapy];
+        
+        //These two lines add a small delay
+        try{Thread.sleep(100);   
+        } catch (Exception exc){}
+        
+      }catch(Exception e){}
+      
+      //get the map another user create
+      map=new MapObject[mapx][mapy];
+      //loop, and for every position, get a number repersent the type of that box of the map
+      for(int i=0;i<mapx;i++){
+        for(int e=0;e<mapy;e++){
+          int mapType=readInput();
+          if(mapType==1){
+            map[i][e]=new Desert(i, e);
+          }else   if(mapType==2){
+            map[i][e]=new Forest(i, e);
+          }else   if(mapType==3){
+            map[i][e]=new Wall(i, e, 90);
+          }else{
+            map[i][e]=new Grass();
+          }
+          
+        }
+      }
+      try{Thread.sleep(100);    //These two lines add a small delay
+      } catch (Exception exc){}
+      
+      
+      //get every state of the character, and make it into the character array
+      p1=new Character[characterNumber];
+      p2=new Character[characterNumber];
+      for(int i=0;i<characterNumber;i++){
+        p1[i]=makeCharacter(readInput(),readInput(),readInput(),readInput(),readInput(), 1);
+      }
+      for(int i=0;i<characterNumber;i++){
+        p2[i]=makeCharacter(readInput(),readInput(),readInput(),readInput(),readInput(), 2);
+      }
+    }
+    
+    
+    this.setSize(winx+300, winy); 
+    try{Thread.sleep(100);    //These two lines add a small delay
+    } catch (Exception exc){}
+    this.setUndecorated(true);
+    
+    
+    //add mouselistener and animation panel(there the main game will start) to the jframe
+    this.addMouseListener(new MyMouseListener());
+    myAnimation = new GameFrame(p1, p2, map, mapx, mapy);
+    this.add(myAnimation);
+    
+    this.setVisible(true);  //set visible
+    start();
+  }
+  
+  /**
+   * MyMouseListener2 class
+   * a mouselistener that detect which button does the user click
+   * By Vincent Zhang
+   * 2018/1/18
+   * Teacher: Mr.Mangat
+   * */
+  private static class MyMouseListener2 implements MouseListener {
+    
+    public void mouseClicked(MouseEvent e) {
+      if(helpMenu>=0){
+      mousePressedMenu=true;
+      }else{
+      //if clicked, check the position, and do things
+      if (e. getButton()== 1) {
+        int x=(int)e.getPoint().getX();
+        int y=(int)e.getPoint().getY();
+        //if click on host game, change the playernumber to 1
+        if(x>=758&&x<=897){
+          if(y>=565+25&&y<=605+25){
+            playerNumber=1;
+          }else  if(y>=618+25&&y<=658+25){
+            playerNumber=2;      //if join game, change to 2
+          }else  if(y>=724+25&&y<=764+25){
+            System.exit(0);  //if exit, then exit
+          }
+        } 
+      }
+      }
+    }
+    
+    
+    public void mouseReleased(MouseEvent e){}
+    public void mousePressed(MouseEvent e) {}
+    public void mouseEntered(MouseEvent e) {}
+    public void mouseExited(MouseEvent e) {}
+  } //end of mouselistener
+  
+  
+  /**
+   * start method
+   * use to start the animation panel
+   * by vincent zhang
+   * teacher: Mr.Mangat
+   * 2018/1/18
+   * */ 
+  public void start(){
+    myAnimation.animate();
+  }
+  
+  
+  /* *
+   * randomMap method
+   * a method random the map
+   * by Vincent Zhang
+   * teacher: Mr.Mangat
+   * 2018/1/18
+   * */
+  public MapObject[][] randomMap(int x, int y){
+    MapObject[][] map=new MapObject[x][y];
+    
+    //make the percentage map
+    int[][][] mapPercent=randomPercent(x,y);
+    
+    //random the map base on the percentage map
+
+
+       for(int i=0;i<x;i++){
+      for(int e=0;e<y;e++){
+                //use the random to create the map, and sent it to another user
+        int max=mapPercent[i][e][0]+mapPercent[i][e][0]+mapPercent[i][e][0];
+        if(max<100){
+          max=100;
+        }
+        if(Math.random()*max<=mapPercent[i][e][0]){
+          map[i][e]=new Desert(i, e);
+          outPutCommands(1);
+        }else if(Math.random()*max<=mapPercent[i][e][1]){
+          map[i][e]=new Forest(i, e);
+          outPutCommands(2);
+        }else if(Math.random()*max<=mapPercent[i][e][2]){
+          map[i][e]=new Wall(i, e,90);
+          outPutCommands(3);
+        }else{
+          map[i][e]=new Grass();
+          outPutCommands(0);
+        }
+      }
+    }
+    return map;  //return map
+  }
+  
+  /**
+   * drawPanel class
+   * to draw the menu of the game
+   * by Jeffey
+   * teacher: Mr.mangat
+   * 2018/1/18
+   * */ 
+  class drawPanel extends JPanel{
+    
+
+    //create varible
+    public BufferedImage image;
+    
+    drawPanel(){
+
+       helpMenu=2;
+       try {
+         image = ImageIO.read(new File("background.png"));
+         
+       } catch (IOException e) {}
+       
+       this. repaint();
+    }
+    
+    
+    //@Override
+    public void paintComponent(Graphics g){
+      super.paintComponent(g);
+  
+      if(helpMenu>=0){
+        if(helpMenu==2){
+          
+          try{
+            g.drawImage( ImageIO.read(new File("help1.png")), 0,0, 1672, 878, this);
+          }catch(Exception e){}
+        }else    if(helpMenu==1){
+          
+          try{
+            g.drawImage( ImageIO.read(new File("help2.png")), 0,0,1672, 878,this);
+          }catch(Exception e){}
+        }else    if(helpMenu==0){
+          
+          try{
+      g.drawImage( ImageIO.read(new File("help3.png")), 0,0, 1672, 878,this);
+        }catch(Exception e){}
+      }
+    }else{
+      //draw the box to show the button
+      g.setFont(new Font("Helvetica", Font.BOLD, 25)); // Set font to title font
+      g.drawImage(image, 0, 0, 1655, 838, null);
+      
+      g.setColor(new Color(104, 61, 5));
+      g.fillRect(758,565,139,40);
+      g.fillRect(758,618,139,40);
+      g.fillRect(758,724,139,40);
+      
+      g.setColor(new Color(209, 155, 18));
+      g.drawRect(758,565,139,40);
+      g.drawRect(758,618,139,40);
+      g.drawRect(758,724,139,40);
+      
+      g.setColor(new Color(249, 222, 14));
+      g.drawString("Host Game", 762, 595);
+      g.drawString("Join Game", 764, 648);
+      g.drawString("Exit", 799, 754);
+    }
+    if(helpMenu>=0){
+    if(mousePressedMenu){
+      mousePressedMenu=false;
+
+     helpMenu--;
+     this.repaint();
+
+    }else{
+            try{
+             Thread.sleep(10);
+           }catch(Exception e){}
+    repaint();
+    }
+    }
+    }
+  }
+  
+  /* *
+   * randomPercent method
+   * a method random the percentage map
+   * by Vincent Zhang
+   * Teacher: Mr.Mangat
+   * 2018/1/18
+   * */
+  public int[][][] randomPercent(int x, int y){
+    
+    
+    int[][][] mapPercent=new int[x][y][3];
+    
+    //fill them with 3 percent
+    for(int i=0;i<x;i++){
+      for(int e=0;e<y;e++){
+        mapPercent[i][e][0]=3;
+        mapPercent[i][e][1]=3;
+        mapPercent[i][e][2]=3;
+      }
+    }
+    
+    //use for loop to change the percent of change of create object on the map
+    for(int r=0;r<mapx/3;r++){
+      
+      int type=(int)(Math.random()*3);         //type of land
+      int percent=(int)(Math.random()*30)+30;    //percent of change of create it
+      int curX=(int)(Math.random()*x);                //the starting x position
+      int curY=(int)(Math.random()*y);              //the starting y position
+      int size=(int)(Math.random()*mapx/5)+3;    //the size of landskipe
+      int direction =0;                                               //if walls, then the direction
+      //if it is walls, then random the direction and make percent 100
+      if(type==2){
+        direction=(int)(Math.random()*2);
+        percent=100;
+      }
+      
+      //loop to change the percent of chance
+      for(int i=curX-size;i<curX+size;i++){
+        for(int e=curY-size;e<curY+size;e++){
+          if(i>=0&&i<x&&e>=0&&e<y){
+            //if it is walls
+            if(type==2){
+              if(direction==0){
+                if(curY==e&&Math.abs(curX-i)<=size){
+                  mapPercent[i][e][type]=percent;
+                }
+              }else{
+                if(curX==i&&Math.abs(curY-e)<=size){
+                  mapPercent[i][e][type]=percent;
+                }
+              }
+              
+            }else if(Math.pow(Math.abs(curX-i)+Math.abs(curY-e),2)<=Math.pow(size,2)){  //if it is not walls
+              mapPercent[i][e][type]=percent;
+            }
+          }
+        }
+      }
+    }
+    return mapPercent;
+  }
+  
+  
+  /* *
+   *MyMouseListener class
+   * a mouselistener that is in the main game, check for the move user made
+   * by Vincent Zhang
+   * Teacher: Mr.Mangat
+   * 2018/1/18
+   * */
+  private class MyMouseListener implements MouseListener {
+    
+    public void mouseClicked(MouseEvent e) {
+      //if clicked, check which side, and change the varable
+      if (e. getButton()== 1) {
+        mousePressed=true;
+        p=e.getPoint();
+        
+      }else  if (e. getButton()==3){
+        displayPoint=e.getPoint();
+        mousePressed2=true;
+      }
+      
+      
+    }
+    public void mouseReleased(MouseEvent e){
+      
+    }
+    public void mousePressed(MouseEvent e) {
+    }
+    public void mouseEntered(MouseEvent e) {
+    }
+    
+    public void mouseExited(MouseEvent e) {
+    }
+  } //end of mouselistener
+  
+  
+  /* *
+   * randomCharacter method
+   * a method random the character
+   * by Vincent Zhang
+   * Teacher: Mr.Mangat
+   * 2018/1/18
+   * */
+  public Character randomCharacter(int team) {
+    
+    //random all the state of character, and send the state to another user
+    int characterClass=(int)(Math.random()*7);
+    int health=(int)(Math.random()*45)+45;
+    int attack=(int)(Math.random()*20)+15;
+    int defence=(int)(Math.random()*50);
+    int speed=(int)(Math.random()*150)+450;
+    outPutCommands(characterClass);
+    outPutCommands(health);
+    outPutCommands(attack);
+    outPutCommands(defence);
+    outPutCommands(speed);
+    
+    
+    //add bonus to each class
+    if(characterClass==0){
+      // it is saber
+      health*=1.2;
+      defence*=1.2;
+      attack*=1.2;
+      speed*=0.95;
+      return new Saber("Saber",  health, attack, defence, speed, team);
+    }else if(characterClass==1){
+      // it is archer
+      defence*=0.8;
+      attack*=1.4;
+      return new Archer("Archer",  health, attack, defence, speed, team);
+    }else if(characterClass==2){
+      // it is lancer
+      health*=1.3;
+      defence*=1.3;
+      attack*=1.2;
+      speed*=1.05;
+      return new Lancer("Lancer",  health, attack, defence, speed, team);
+    }else if(characterClass==3){
+      // it is Rider
+      health*=0.9;
+      defence*=0.9;
+      attack*=1.1;
+      speed*=0.7;
+      return new Rider("Rider",  health, attack, defence, speed, team);
+      
+    }else if(characterClass==4){
+      // it is Caster
+      defence=0;
+      return new Caster("Caster",  health, attack, defence, speed, team);
+    }else if(characterClass==5){
+      // it is Assassin
+      health*=0.5;
+      defence*=0.5;
+      attack*=1.5;
+      speed*=0.85;
+      return new Assassin("Assissin",  health, attack, defence, speed, team);
+    }else {
+      // it is Berserker
+      health*=1.5;
+      defence=0;
+      attack*=1.7;
+      speed*=1.2;
+      return new Berserker("Berserker",  health, attack, defence, speed, team);
+    }
+    
+  }
+  /* *
+   * makeCharacter method
+   * a method receve the state of character, and make it
+   * by Vincent Zhang
+   * */
+  public Character makeCharacter(int characterClass, int health, int attack, int defence, int speed, int team ) {
+    //add bonus to each class
+    if(characterClass==0){
+      // it is saber
+      health*=1.2;
+      defence*=1.2;
+      attack*=1.2;
+      speed*=0.95;
+      return new Saber("Saber",  health, attack, defence, speed, team);
+    }else if(characterClass==1){
+      // it is archer
+      defence*=0.8;
+      attack*=1.4;
+      return new Archer("Archer",  health, attack, defence, speed, team);
+    }else if(characterClass==2){
+      // it is lancer
+      health*=1.3;
+      defence*=1.3;
+      attack*=1.2;
+      speed*=1.05;
+      return new Lancer("Lancer",  health, attack, defence, speed, team);
+    }else if(characterClass==3){
+      // it is Rider
+      health*=0.9;
+      defence*=0.9;
+      attack*=1.1;
+      speed*=0.7;
+      return new Rider("Rider",  health, attack, defence, speed, team);
+      
+    }else if(characterClass==4){
+      // it is Caster
+      defence=0;
+      return new Caster("Caster",  health, attack, defence, speed, team);
+    }else if(characterClass==5){
+      // it is Assassin
+      health*=0.5;
+      defence*=0.5;
+      attack*=1.5;
+      speed*=0.85;
+      return new Assassin("Assissin",  health, attack, defence, speed, team);
+    }else {
+      // it is Berserker
+      health*=1.5;
+      defence=0;
+      attack*=1.7;
+      speed*=1.2;
+      return new Berserker("Berserker",  health, attack, defence, speed, team);
+    }
+    
+  }
+  
+  /* *
+   *outPutCommands method
+   * a method output the command to another player 
+   * by Vincent Zhang
+   * */
+  public static void outPutCommands(int message) {
+    output.println(message);
+    output.flush(); 
+  }
+  
+  /* *
+   *readInput method
+   * a method read the input another user sent
+   * by Vincent Zhang
+   * */
+   public static int readInput() {
+    
+    //read input and change it to int
+    while(true){
+    try{
+      if(input.ready()){
+        return Integer.valueOf(input.readLine());
+      }else{
+        Thread.sleep(1);
+      }
+    }catch(Exception e){}
+    }
+
+  }
+  
+  
+}

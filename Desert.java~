@@ -1,0 +1,17 @@
+import java.awt.image.*;
+import javax.imageio.*;
+import java.io.File;
+public class Desert extends MapObject{
+  
+  public Desert(int x, int y) { 
+    super.setX(x);
+    super.setY(y);
+     try{
+
+        image = ImageIO.read(new File("desert.png"));
+      super.setImage(image);
+    }catch(Exception e){}
+  }
+  /* ADD YOUR CODE HERE */
+  
+}

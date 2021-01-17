@@ -1,0 +1,32 @@
+/**
+ * Auto Generated Java Class.
+ */import java.awt.image.*;
+import javax.imageio.*;
+import java.io.File;
+public class Rider extends Character {
+  
+  public Rider(String name, int health, int attack, int defence, int speed, int team) { 
+    super.setMaxRange(2);//can shoot range of 2 and 3
+    super.setName(name);
+    super.setTeam(team);
+    super.setMinRange(1);
+    super.setSpeed(speed);
+    super.setMaxHealth(health);
+    super.setAttack(attack);
+    super.setHealth(health);
+    super.setDefence(defence);
+    super.setMove(5);
+     BufferedImage image;
+    try{
+      if(team==1){
+        image = ImageIO.read(new File("RedTeam(1).png"));
+      }else{
+        image = ImageIO.read(new File("BlueTeam(1).png"));
+      }
+      super.setImage(image.getSubimage(184, 0, 46, 46), image.getSubimage(184, 46, 46, 46));
+    }catch(Exception e){}
+      super.upDateSpeed();
+  }
+  
+  
+}
